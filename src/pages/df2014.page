@@ -1,0 +1,970 @@
+<apex:page showHeader="false" sidebar="false" doctype="html-5.0" standardController="Account">
+	<head>
+		<meta charset="utf-8" />
+    	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    	<meta name="viewport" content="width=device-width, initial-scale=1" />
+    	<title>Dreamforce Demo</title>
+		<!-- Latest compiled and minified CSS -->
+		<apex:stylesheet value="{!URLFOR($Resource.bootstrap32, 'bootstrap3.2/css/bootstrap.min.css')}"/>
+		<!-- Optional theme -->
+		<apex:stylesheet value="{!URLFOR($Resource.bootstrap32, 'bootstrap3.2/css/bootstrap-theme.min.css')}"/>
+		<style type="text/css">
+			
+			.list-group-item.active, .list-group-item.active:hover, .list-group-item.active:focus {
+			    text-shadow: 0px -1px 0px #FFA500;
+			    background-image: linear-gradient(to bottom, orange 0px, orange 100%);
+			    background-repeat: repeat-x;
+			    border-color: #FFA500;
+			}
+			
+			a:hover {
+    			color: orange;
+			}
+			
+			.bar {
+			  fill: orange;
+			}
+			
+			.bar:hover {
+  				fill: #00BFFF;
+			}
+			
+			line.crisp {
+            	shape-rendering: crispEdges;
+            }
+			
+			.blocks {
+			  width: 100% !important;
+			}
+						
+			.node rect {
+			  cursor: pointer;
+			  fill: orange;
+			  fill-opacity: .5;
+			  stroke: orange;
+			  stroke-width: 1.5px;
+			}
+			
+			.node text {
+			  font: 10px sans-serif;
+			  pointer-events: none;
+			}
+			
+			path.link {
+			  fill: none;
+			  stroke: orange;
+			  stroke-width: 1.5px;
+			}
+			
+			.axis path, .axis line {
+			    fill: none;
+			    shape-rendering: auto;
+			    stroke: red;
+			}
+			
+			.grid .tick {
+			    stroke: lightgrey;
+			    stroke-opacity: 0.7;
+			    shape-rendering: crispEdges;
+			}
+			.grid path {
+				stroke-width: 0;
+			}
+			
+		</style>
+	</head>
+	
+	<body>
+	    <!-- Header Nav -->
+	    <div class="navbar navbar-default navbar-static-top" role="navigation">
+	    	<div class = "container">
+	    		<div  class="navbar-brand nav-justified" style="text-align: center;">Introduction to D3 Demos</div>
+	    	</div>
+	    </div>
+		
+		<div id="elmmodalid" class="modal fade" role="dialog" aria-hidden="true">
+			<div class="modal-dialog">
+			    <div class="modal-content" style="min-height:100px; max-width:200px;">
+			    	<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+						<a hret="#" target="_blank" id="objecturlid" style="text-align:center;">Name</a>
+					</div>
+			    </div>
+		  	</div>
+		</div>
+	    
+	    <div class="container-fluid">
+		    <div class="row">
+		    	<!-- left navbar Container -->
+		    	<div class="col-md-2 sidebar">
+		          <div class="list-group" id="navcontainerid"> 
+					  <a href="#cricle" id="basiccircleid" class="list-group-item active">Circles Demo</a>
+					  <a href="#updatecricle" id="updatecircleid" class="list-group-item">Circles Update Demo</a>
+					  <a href="#bar" id="barchartid" class="list-group-item">Bar Chart</a>
+					  <a href="#line" id="linechartid" class="list-group-item">Line Chart</a>
+					  <a href="#api" id="analyticsapiid" class="list-group-item">Analytics API</a>
+					  <!-- <a href="#pie" id="piechartid" class="list-group-item">Pie Chart</a>  -->
+					  <a href="#conversion" id="infographicsid" class="list-group-item">Conversion Analysis</a>
+				  </div>
+		        </div>
+		        <!-- Right container -->
+		        <div class="col-md-10">
+		        	<div class="panel panel-success" style="min-height:650px;">
+		        		<div class="panel-body" id="chartcontainerid">
+		        		
+		        			<!-- VF Forms -->
+		        			<apex:form >
+			        			<!-- Account lookups -->
+			        			<div id="accountlookupblockid" style="display:none;" class="alert alert-success" role="alert">
+									<span>Select Account &nbsp;&nbsp;</span>
+									<apex:inputField id="acclookupid" style="width:300px" value="{!Account.ParentId}" onchange="chartapp.conversion.load();" />
+									<apex:outputField id="accownerid" style="width:300px" value="{!Account.OwnerId}" />
+								</div>
+		        			</apex:form>
+		        			
+		        			<!-- charts container -->
+		        			<div id="chartid" style="text-align: left"></div>
+		        		</div>
+		        	</div>		        	
+		        </div>
+		    </div>  
+	    </div>
+	    
+	    <!-- Footer -->
+	    <div class="navbar navbar-default navbar-fixed-bottom" role="navigation">
+	    	<div class = "container">
+	    		<div  id="footertxtid" class="navbar-brand nav-justified" style="text-align: center;">Powered By D3.js + Force.com</div>
+	    	</div>
+	    </div>
+	</body>
+	
+	<apex:includeScript value="{!URLFOR($Resource.MobileSample_Resources_jQueryMobile, 'jquery-1.9.1.min.js')}"/>
+	<!-- Latest compiled and minified JavaScript -->
+	<apex:includeScript value="{!URLFOR($Resource.bootstrap32, 'bootstrap3.2/js/bootstrap.min.js')}"/>
+	<!-- D3.JS Library -->
+    <apex:includeScript value="{!URLFOR($Resource.d3js)}"/>
+    <!-- Google Charts API -->
+    <script type='text/javascript' src='https://www.google.com/jsapi'></script>
+    <!-- ForceTk Javascript Library from Salesforce for accessing Salesforce API using Javascript -->
+    <apex:includeScript value="{!URLFOR($Resource.MobileSample_Resources_jQueryMobile, 'ForceTk.js')}"/>
+	<script type="text/javascript">
+		"use strict";
+		//load google chart
+		google.load("visualization", "1", {packages:["table"]});
+		
+		var $ = jQuery.noConflict();
+		
+		var chartapp = window.chartapp || {};
+		chartapp.circle = window.chartapp.circle || {};
+		chartapp.util = window.chartapp.util || {};
+		chartapp.treechart = window.chartapp.treechart || {};
+		chartapp.conversion = window.chartapp.conversion || {};
+		  		
+		//all data
+    	chartapp.datastore = {reportinfo:{}};
+    		            
+	    //init data 
+	    /* Analytics API Schema details - http://www.salesforce.com/us/developer/docs/api_analytics/index.htm */
+	    chartapp.initdata = function(response){
+		    if(response.hasDetailRows){
+		    	if(response.reportExtendedMetadata && response.reportExtendedMetadata.detailColumnInfo){ 		
+		    		//create empty datable our apps base data structure which rows and columns matrix
+		    		chartapp.datastore.datatable = new google.visualization.DataTable();
+		    		
+		    		//create header
+		    		var headerarray = chartapp.datastore.report.reportMetadata.detailColumns;
+		    		var headrmap = [];
+		    		
+		    		//Loop through the report meta-data and perform simple transformation of values
+		    		for(var i=0; i<headerarray.length ; i++){
+	                    var h = response.reportExtendedMetadata.detailColumnInfo[headerarray[i]] || [];
+		    			if(h.dataType=="picklist" || h.dataType=="string"){
+		    				h.dataType = 'string';
+		    			}
+		    			if(h.dataType=="currency" || h.dataType=="int" || h.dataType=="percent"){
+		    				h.dataType = 'number';
+		    			}
+		    			if(h.dataType=="date" || h.dataType=="datetime"){
+		    				h.dataType = 'date';
+		    			}
+		    			headrmap[i]=h.dataType;	
+		    			chartapp.datastore.datatable.addColumn(h.dataType, h.label);
+		    		}
+		    		
+		    		//append rows
+		    		for(var index=0; index<response.factMap["T!T"].rows.length; index++){
+		    			//console.log("pushing data row = "+JSON.stringify(response.factMap["T!T"].rows[index].dataCells));
+		    			var row = [];
+		    			for(var k=0; k<response.factMap["T!T"].rows[index].dataCells.length; k++){
+		    				var cell = response.factMap["T!T"].rows[index].dataCells[k];
+	                        if(cell.value && cell.value.amount){
+		    					//console.log("cell amount"+cell.value.amount);
+		    					row.push(parseInt(cell.value.amount));
+		    				}else{
+		    					if(headrmap[k]=="number"){
+		    						row.push(parseInt(cell.label));
+		    					}else if(headrmap[k]=="date"){
+		    						row.push(new Date(cell.value));
+		    					}else if(cell.label == cell.value){
+		    						row.push(cell.value);
+		    					}else{
+		    						row.push({f:cell.label, v:cell.label+"#"+cell.value});
+		    					}
+		    					//console.log("cell value "+cell.label);
+		    				}
+		    			}
+		    			//console.log(JSON.stringify(row));
+		    			chartapp.datastore.datatable.addRow(row);	
+		    		}		
+		    	}  		
+		    }	
+	    }
+    
+		chartapp.evthandler = function(divid){
+			clearTimeout(chartapp.circle.timer);
+			$("#accountlookupblockid").hide();
+			$("#chartid").empty();
+			if(divid === "basiccircleid"){
+				chartapp.circle.load([20, 30, 40, 50]);
+			}else if(divid === "updatecircleid"){
+				chartapp.circle.update()	
+			}else if(divid === "linechartid"){
+				chartapp.linechart()
+			}else if(divid === "barchartid"){
+				chartapp.barchart();
+			}else if(divid === "analyticsapiid"){
+				chartapp.treechart.draw();
+			}else if(divid === "infographicsid"){
+				$("#accountlookupblockid").show();
+				d3.select("[id$=acclookupid]").property("value", "");	
+			}else{
+				console.log("No Match Found = "+divid)
+			}	
+		}
+		
+		
+		chartapp.circle.load = function(vals){
+			//color scale
+			var color = d3.scale.category10();
+			
+			//create canvas with width/height
+			var svg;
+			if(d3.select("#chartid").selectAll("svg")[0].length>0){
+				//console.log("SVG Element exist");
+				svg = d3.select("#chartid").select("svg");
+			}else{
+				//console.log("SVG Element Not Found ");
+				svg = d3.select("#chartid").append("svg").attr("width", 1200).attr("height", 1200);
+			}
+			           
+			//selection - select circle if exists
+			var circle = svg.selectAll("circle") 
+			//Load & Bind - We are binding data locally here
+			    .data(vals, function(d) {return d;});
+			//create place holder if no circile exist    
+			circle.enter() 
+			    .append("circle")
+			//Transform - function to compute cx, cy value    
+			    .attr("cy", function(d, i){ return (d * i ) + 100;}) 
+			    .attr("cx", function(d, i) { return ((i + 3) *  d)+50; })
+			    .attr("r", 0)
+			//Transition    
+			    .transition()
+			    .duration(300)
+			    .ease("linear")
+			    .delay(function(d, i) { return i * 100; })
+			//set radius
+			    .attr("r", function(d, i) { return i+d; })
+			//style color
+			    .style("stroke", function(d, i){return color(i);})
+			    .style("stroke-width", 4)
+			    .style("fill", "none");
+			//add text
+			var textEnter = svg.selectAll("text").data(vals, function(d) {return d;});
+			textEnter
+				.enter().append("text")
+				.attr("x", function(d, i) { return ((i + 3) *  d)+50; })
+				.attr("y", function(d, i){ return (d * i ) + 100;})
+			    .text(function(d) { return d; })
+			    .style("opacity", 0)
+			    .transition()
+			    .delay(600)
+			    .style("opacity", 1);
+			//exit
+			circle.exit().transition().attr("r", 0).remove();
+			textEnter.exit().remove();
+		}
+		
+		chartapp.circle.timeout = function(){
+			//console.log("timeout called");
+			var arr = []; 
+			var uniquevals = {};
+			for(var i=0; i<10; i++){
+				var randval =  10 * Math.floor(Math.random() * 10);
+				if(!uniquevals[randval] && randval>0){
+					uniquevals[randval] = 1;
+					arr.push(randval);
+				}	
+			}
+			chartapp.circle.load(arr);
+			console.log("timeout arr "+arr);
+			chartapp.circle.update();
+		}
+		
+		chartapp.circle.update = function(){
+			chartapp.circle.timer = setTimeout(chartapp.circle.timeout, 2000);
+		}
+		
+		chartapp.util.summarize = function(keycol, valuecol, minvalfilter){
+	    	var aggregates = {};
+	    	for(var i=0; i<chartapp.datastore.datatable.getNumberOfRows(); i++){
+	   			var total = Number(chartapp.datastore.datatable.getValue(i,valuecol)) >= minvalfilter ? Number(chartapp.datastore.datatable.getValue(i,valuecol)) : 0; 
+	   			if(aggregates[chartapp.datastore.datatable.getValue(i,keycol)]){
+	   				total = Number(aggregates[chartapp.datastore.datatable.getValue(i,keycol)]) +total; 
+	   			}
+	   			aggregates[chartapp.datastore.datatable.getValue(i,keycol)]=total;
+	   		}
+	   		return aggregates;
+    	}
+    	
+    	chartapp.util.getReports = function(){
+    		var reportquery = "Select r.Name, r.Id From Report r where r.Name IN ('dreamforce2014')";
+    		chartapp.client.query(reportquery, function(response){
+    			if(response){
+    				var results = [];
+    				chartapp.conversion.flattenobjs(response, results);
+    				//console.log("results = "+JSON.stringify(results));
+    				if(results && results[0] && results[0]["Name"].toLowerCase()=="dreamforce2014"){
+    					chartapp.datastore.reportinfo.opportunity = results[0].Id; 
+    					console.log("chartapp.datastore.reportinfo.opportunity = "+chartapp.datastore.reportinfo.opportunity);	
+    				}
+    				if(chartapp.datastore.reportinfo.opportunity && chartapp.datastore.reportinfo.opportunity.length >=15){
+			        	chartapp.client.ajax("/v31.0/analytics/reports/"+chartapp.datastore.reportinfo.opportunity+"?includeDetails=true", function(response){
+			            	console.log("It Works! "); 
+			            	chartapp.datastore.report = response;
+			            	chartapp.initdata(response);
+			        	}, 
+				        function(jqXHR, textStatus, errorThrown){
+				            console.log("Error: "+jqXHR.status+" "+jqXHR.statusText);    
+				            console.log(jqXHR.responseText);
+				        });
+	        		}
+            	}
+    		},function(error){
+            	console.log(JSON.stringify(error));
+        	});
+    	}
+    	 
+		chartapp.linechart = function(){
+	    	//construct dataset Oppty Close Date and Amount
+	   	    var revmap = chartapp.util.summarize(5, 3, -999999);
+	   		var data = [];
+	        for(var p in revmap){
+	            var temp = {closedate:new Date(p), amount:(revmap[p] || 0)};
+	            data.push(temp);
+	        }
+	        
+	        //Sort Data need for transistion
+	        data.sort(function(a, b){ return d3.ascending(a.closedate, b.closedate); });
+	        
+	        
+	        //Get Current Window width and height
+	   		var viewport = { width  : 800, height : 300};
+	   		//Set Canvas Area properites
+	   		//var margin = {top: 200, right: 100, bottom: 200, left: 100},
+	   		var margin = {top: 70, right: 50, bottom: 40, left: 100},
+		    width = 800,
+		    height =500;
+			
+			//X value transformation function - transforms close date into chart x position of canvas
+			var x = d3.time.scale()
+			          .range([0, width])
+			          .domain(d3.extent(data, function(d) { return d.closedate; }));
+			
+			//Y Value transformation function - transforms amount into y position of canvas
+			var y = d3.scale.linear()
+			          .range([height, 0])
+			          .domain(d3.extent(data, function(d) { return d.amount; }));
+			
+			//X Axis Function
+			var xAxis = d3.svg.axis()
+			    .scale(x)
+			    .ticks(10)
+			    .tickFormat(d3.time.format('%m/%y'))
+			    .orient("bottom");
+			
+			//Y Axis Function
+			var yAxis = d3.svg.axis().scale(y).ticks(10).orient("left");
+			    
+			//Line Function to draw SVG Line
+			var line = d3.svg.line()
+			    .interpolate("cardinal")
+			    .x(function(d) { return x(d.closedate); })
+			    .y(function(d) { return y(d.amount); });
+			
+			//Create SVG canvas area with height and width properites
+			var svg = d3.select("#chartid").append("svg")
+			    .attr("width", width + margin.left + margin.right)
+			    .attr("height", height + margin.top + margin.bottom)
+			  	.append("g")
+			    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+			
+	   		//console.log("data = "+JSON.stringify(data));
+			
+			
+			//Draw XAxis
+			svg.append("g")
+			      .attr("class", "x axis")
+			      .attr("transform", "translate(0," + height + ")")
+			      .style("text-anchor", "middle")
+			      .call(xAxis)
+			      .append("text")
+			      .attr("x", width )
+	        	  .attr("y", "20")
+	        	  .style("text-anchor", "middle")
+			      .text("Close Date");
+			
+			//Draw YAxis
+			svg.append("g")
+			      .attr("class", "y axis")
+			      .call(yAxis)
+			      .append("text")
+			      .attr("transform", "rotate(-90)")
+			      .attr("y", 6)
+			      .attr("dy", ".71em")
+			      .style("text-anchor", "middle")
+			      .text("Sales Amount ($)");
+			
+			//Draw SVG Path
+			var path = svg.append("path")
+			      .datum(data)
+			      .attr("d", line)
+	              .style('fill', 'none')
+	              .style('stroke', 'orange')
+	              .attr("stroke-width", "2");
+			      
+			     
+	        //total nodes for transition
+	        var totalLength = path.node().getTotalLength();
+	        
+	        //path transition
+	        path
+	            .attr("stroke-dasharray", totalLength+","+totalLength)
+	            .attr("stroke-dashoffset", totalLength)
+	            .transition()
+	            .duration(2000)
+	            .ease("linear")
+	            .attr("stroke-dashoffset", 0);
+	   }
+	   
+	   chartapp.barchart = function(){
+	        //construct dataset stage and amount combo
+	        var revmap = chartapp.util.summarize(10, 4, -999999); 
+	        //get screen width and height
+	        var viewport = {
+			    width  : 800,
+			    height :700
+			};
+			//set svg margins
+	        var margin = {top: 70, right: 50, bottom: 40, left: 100},
+	        width = viewport.width - margin.left - margin.right,
+	        height = viewport.height - margin.top - margin.bottom;
+	        //convert object to array so d3 understands
+	        var data = [];
+	        for(var p in revmap){
+	            var t = {quarter:p, revenue:(revmap[p] || 0)};
+	            data.push(t);
+	        }
+	        
+	        data.sort(function(a, b){ 
+	        	var atemp = a.quarter.split('-')[1]+''+a.quarter.split('-')[0];
+	        	var btemp = b.quarter.split('-')[1]+''+b.quarter.split('-')[0]; 	
+	        	return d3.ascending(atemp, btemp); 
+	        });
+	        
+	        //console.log(JSON.stringify(data));
+	        
+	        /* https://github.com/mbostock/d3/wiki/Ordinal-Scales#wiki-ordinal_rangeBands */
+	        //define x scale function which is will map our quarter value into x value in chart
+	        //RangeRoundBands - is a continious function which is going to return unique values for each input domain value 
+	        var x = d3.scale.ordinal()
+	                .rangeRoundBands([0, width])
+	                .domain(data.map(function(d) { return d.quarter; }));
+	        
+	        //X Axis Function
+			var xAxis = d3.svg.axis()
+			    .scale(x)
+			    .ticks(10)
+			    //.tickFormat(d3.time.format('%m/%y'))
+			    .orient("bottom");
+	        
+	        //define y scale function which is will map our revenue value into y value in chart
+	        var y = d3.scale.linear()
+	            .range([height,  0]) //notice we have reverse scale here
+	            .domain([0, d3.max(data, function(d) { return d.revenue; })]);
+	        
+	     
+	        //define our svg canvas for barchart
+	        var svg = d3.select("#chartid")
+	                        .append("svg:svg")
+	                        .attr("width", width)
+	                        .attr("height", height);
+	        
+	        
+	        //draw barchart which will create bars (svg rectangel) in canvas using our x & y scale function to place them in appropriate place
+	        svg.selectAll(".bar")
+	            .data(data)
+	            .enter().append("rect")
+	            .attr("class", "bar")
+	            .attr("x", function(d) { return x(d.quarter)+100; })
+	            .attr("width", 25)
+	            .attr("y", height)
+	            .attr("height", 0)
+	            .transition()
+	            .delay(function(d) { return y(d.revenue); })
+	            .duration(1000)
+	            .attr('y', function(d) { return y(d.revenue); })
+	            .attr('height', function(d) { return (height) - y(d.revenue); });
+	        
+	        //Draw XAxis
+			svg.append("g")
+			      .attr("class", "x axis")
+			      .attr("transform", "translate(0," + height + ")")
+			      .style("text-anchor", "middle")
+			      .call(xAxis)
+			      .append("text")
+			      .attr("x", width )
+	        	  .attr("y", "20")
+	        	  .style("text-anchor", "middle")
+			      .text("Quarter");
+			     
+	        
+    	}
+    	
+    	//time series plotting salesforce records
+    	//get data related to different accounts
+    	chartapp.conversion.load = function(){
+    		//salesforce hack for getting selected lookup id value
+    		var accid = d3.select("[id$=acclookupid_lkid]").property("value");
+    		if(!accid){
+    			return;
+    		}
+    		
+    		//console.log("selected account = "+accid);
+    		var accquery = "Select a.Name, a.Id, (Select Name, Id, Amount, CreatedDate, CloseDate From Opportunities), (Select Id, Subject, CreatedDate From Events), (Select Id, Name, CreatedDate From Contacts), (Select Id, CaseNumber, Subject, CreatedDate From Cases), a.CreatedDate From Account a where a.id IN ( '"+accid+ "' )";
+    		var leadquery = "Select l.Name, l.Id, l.ConvertedDate, l.CreatedDate From Lead l where l.ConvertedAccountId IN ( '"+accid+ "' )";
+    		
+    		//get lead data first and execute account query later few 1 second assuming this one finish it works for demo purposes
+    		var result = [];
+    		chartapp.client.query(leadquery, function(response){
+    			if(response){
+    				//console.log(JSON.stringify(response));
+    				chartapp.conversion.flattenobjs(response, result);
+            		
+            	}
+    		},function(error){
+            	console.log(JSON.stringify(error));
+        	});
+    		
+    		//account with children data
+    		setTimeout(function(){
+	    		chartapp.client.query(accquery, function(response){
+	            	//console.log(JSON.stringify(response));
+	            	//var result = [];
+	            	console.log("response len = "+response.length);
+	            	if(response){
+	            		chartapp.conversion.flattenobjs(response, result);
+	            		//console.log("result size = "+result.length)
+	            	}
+	            	if(result.length>0){
+	            		chartapp.conversion.draw(result);
+	            	}
+	        	},function(error){
+	            		console.log(JSON.stringify(error));
+	        	});
+        	}, 1000);
+        			
+    	}
+    	
+    	//flatten soql result into array list of object so it can be plotted in graph
+    	chartapp.conversion.flattenobjs = function(objects, result){
+			var obj = {};
+			for(var prop in objects){
+				if(typeof objects[prop] == "object"){
+					if(prop != "attributes" ){
+						chartapp.conversion.flattenobjs(objects[prop], result);
+					}		
+				}
+				if(prop == "attributes"){
+					obj["type"] = objects[prop].type;	
+				}
+				else{
+					obj[prop] = objects[prop];	
+				}
+			}
+			if(obj.type){
+				result.push(obj);
+			}
+    	}
+    	
+    	chartapp.conversion.draw = function(data){
+			//color scale
+			var color = d3.scale.category10();         
+            var parsedate = d3.time.format.utc("%Y-%m-%dT%H:%M:%S.%L%Z").parse
+			
+			var getdate = function(d) {
+			    if(d.type == "Opportunity") { 
+			    	return d.CloseDate+"T0:0:0.000+0000";
+			    }else { 
+			    	return d.CreatedDate;
+			    }
+			};
+			
+			var sizes = {Account: 0, Contact:0, Opportunity: 0, Case: 0, Event: 0, Lead: 0 };
+
+			var sizefunction = function(d){
+				if(d.type == "Account"){
+					sizes.Account ++;
+					return 200  * sizes.Account; 
+				} 
+			    else if(d.type == "Contact") { 
+			    	sizes.Contact ++;
+					return 200  * sizes.Contact;
+			    }
+			    else if(d.type == "Opportunity") { 
+			    	sizes.Opportunity ++;
+					return 200  * sizes.Opportunity;
+			    }
+			    else if(d.type == "Case") { 
+			    	sizes.Case ++;
+					return 200  * sizes.Case;
+			    }
+			    else if(d.type == "Event") { 
+			    	sizes.Event ++;
+					return 200  * sizes.Event;
+			    }
+			    else if(d.type == "Lead") { 
+			    	sizes.Lead ++;
+					return 200  * sizes.Lead;
+			    }
+			}
+			
+			var x = d3.time.scale()
+				.domain(d3.extent(data, function(d) { return parsedate(getdate(d)); }))
+			    .range([0, 900]);
+			
+			var y = d3.scale.ordinal().domain(['Lead', 'Account', 'Contact', 'Event', 'Opportunity', 'Case' ]).rangeRoundBands([500, 0]);
+			d3.select("#chartid").selectAll("svg").remove();
+			
+			//create canvas with width/height
+			var svg = d3.select("#chartid").append("svg").attr("width", 1200).attr("height", 1000)
+						.attr("transform", "translate(200, 70)");;
+			
+			var shapestype = function(d){
+				if(d.type == "Account"){ 
+					return "triangle-up"; 
+				} 
+			    else if(d.type == "Contact") { 
+			    	return "diamond";
+			    }
+			    else if(d.type == "Opportunity") { 
+			    	return "circle";
+			    }
+			    else if(d.type == "Case") { 
+			    	return "cross";
+			    }
+			    else if(d.type == "Event") { 
+			    	return "square";
+			    }
+			    else if(d.type == "Lead") { 
+			    	return "triangle-down";
+			    }
+			}
+			
+			var colorvals = function(d){
+				if(d.type == "Account") { 
+					return color(7); 
+				} 
+			    else if(d.type == "Contact") { 
+			    	return color(3);
+			    }
+			    else if(d.type == "Opportunity") { 
+			    	return color(5);
+			    }
+			    else if(d.type == "Case") { 
+			    	return color(1);
+			    }
+			    else if(d.type == "Event") { 
+			    	return color(9);
+			    }
+			    else if(d.type == "Lead") { 
+			    	return color(0);
+			    }
+			}
+						
+			var xAxis = d3.svg.axis()
+		        .scale(x)
+		        .orient("bottom")            
+		        .ticks(d3.time.months, 2)
+		        .tickFormat(d3.time.format('%m/%y'))
+
+			
+			var yAxis = d3.svg.axis()
+		        .scale(y)
+		        .orient("left")
+		        .ticks(10);
+			
+			// Add the X Axis
+    		svg.append("g")
+		        .attr("class", "x axis")
+		        .attr("transform", "translate(0, -50)")
+		        .call(xAxis);
+		        
+		   // Add the y Axis
+		   svg.append("g")
+		        .attr("class", "y axis")
+		        .attr("transform", "translate(-50, 0)")
+		        .call(yAxis);
+		  
+		   svg.append("g")         
+			.attr("class", "grid")
+        	.attr("transform", "translate(0," + 500 + ")")
+        	.call(d3.svg.axis()
+        	.scale(x)
+         	.orient("bottom")
+         	.tickSize(-500, 0, 0));
+        
+		svg.append("g")         
+        	.attr("class", "grid")
+        	.call(d3.svg.axis()
+        	.scale(y)
+         	.orient("left")
+         	.tickSize(-900, 0, 0)
+         	.tickFormat(""));
+        
+		svg.selectAll("path")
+			.data(data, function(d) {return d.Id;})
+			.enter().append("path")
+			.transition()
+			.duration(300)
+			.ease("linear")
+	        .delay(300)
+	        .attr("transform", function(d, i) { return "translate(" + x(parsedate(getdate(d))) + "," + y(d.type) + ")";})			    
+			.attr("d", d3.svg.symbol().size(function(d){return sizefunction(d);}).type(function(d) { return shapestype(d);}))
+			.attr("class", "shapesclass")
+			.style("fill", "none")
+			.style("stroke", function(d) {return colorvals(d);})
+			.style("stroke-width", "2");
+		
+		/*	    
+		d3.selectAll("path").on("mouseover", function(d, i) {
+			var xPosition = x(parsedate(getdate(d)));
+			var yPosition =  y(d.type);
+			console.log("size = "+d3.select(this).size());
+			d3.select(this).attr("d", d3.svg.symbol().size(1000).type(function(d) { return shapestype(d);}));
+			
+			if(d3.select(this).attr("class")=="shapesclass"){
+				d3.select("#elmmodalid")
+				.style("left", xPosition + "px")
+				.style("top", yPosition + "px");
+					$("#objecturlid").attr("href", "/"+d.Id).text(d.type+" Detail");
+			    	$("#elmmodalid").modal("show");
+			}
+			
+			});    */
+			    			
+    	}
+		
+		
+		//tree external reference
+		var treechart = {prop:{}, dom:{}, fn:{}};
+    	
+    	//tree charts
+    	chartapp.treechart.draw = function(){
+	    	treechart.prop.width = 1000;
+		    treechart.prop.height = 4000;
+		    treechart.prop.i = 0;
+		    treechart.prop.barHeight = 40,
+		    treechart.prop.barWidth = 800;
+		    treechart.prop.duration = 400;
+		    treechart.root = {};
+	
+			treechart.fn.tree = d3.layout.tree()
+			    .size([treechart.prop.height, 100]);
+			
+			treechart.fn.diagonal = d3.svg.diagonal()
+			    .projection(function(d) { return [d.y, d.x]; });
+			
+			treechart.dom.vis = d3.select("#chartid").append("svg:svg")
+			    .attr("width", treechart.prop.width)
+			    .attr("height", treechart.prop.height)
+			  	.append("svg:g")
+			  	.attr("transform", "translate(20,30)");
+		
+			treechart.fn.moveChildren = function(node) {
+			    if(node.children) {
+			        node.children.forEach(function(c) { treechart.fn.moveChildren(c); });
+			        node._children = node.children;
+			        node.children = null;
+			    }
+			}
+			var flare = {name:"report", children:[]};
+			chartapp.treechart.traverse("root", chartapp.datastore.report, flare);
+		    flare.x0=0;
+		    flare.y0 = 0;
+		    treechart.root = flare;
+		    treechart.fn.moveChildren(flare);
+		    chartapp.treechart.update(treechart.root);
+		        
+    	}
+    
+    	//update tree nodes
+    	chartapp.treechart.update = function(source){
+    		// Compute the flattened node list
+			var nodes = treechart.fn.tree.nodes(treechart.root);
+		  
+		  	// Compute the "layout".
+		  	nodes.forEach(function(n, i) {
+		    	n.x = i * treechart.prop.barHeight;
+		  	});
+		  
+		  	// Update the nodes
+		  	var node = treechart.dom.vis.selectAll("g.node")
+		      .data(nodes, function(d) { return d.id || (d.id = ++treechart.prop.i); });
+		  
+		  	var nodeEnter = node.enter().append("svg:g")
+		      .attr("class", "node")
+		      .attr("transform", function(d) { return "translate(" + source.y0 + "," + source.x0 + ")"; })
+		      .style("opacity", 1e-6);
+		
+		  	// Enter any new nodes at the parent's previous position.
+		  	nodeEnter.append("svg:rect")
+		      .attr("y", -treechart.prop.barHeight / 2)
+		      .attr("height", treechart.prop.barHeight)
+		      .attr("width", treechart.prop.barWidth)
+		      .style("fill", treechart.fn.nodecolor)
+		      .on("click", treechart.fn.nodeclick);
+		  
+		  	nodeEnter.append("svg:text")
+		      .attr("dy", 3.5)
+		      .attr("dx", 5.5)
+		      .text(function(d) { return d.name; })
+		      .style("font-size","18px");
+		  
+		  	// Transition nodes to their new position.
+		  	nodeEnter.transition()
+		      .duration(treechart.prop.duration)
+		      .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; })
+		      .style("opacity", 1);
+		  
+		  	node.transition()
+		      .duration(treechart.prop.duration)
+		      .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; })
+		      .style("opacity", 1)
+		    .select("rect")
+		      .style("fill", treechart.fn.nodecolor);
+		  
+		  	// Transition exiting nodes.
+		  	node.exit().transition()
+		      .duration(treechart.prop.duration)
+		      .attr("transform", function(d) { return "translate(" + source.y + "," + source.x + ")"; })
+		      .style("opacity", 1e-6)
+		      .remove();
+		  
+		  	// Update the links
+		  	var link = treechart.dom.vis.selectAll("path.link")
+		      .data(treechart.fn.tree.links(nodes), function(d) { return d.target.id; });
+		  
+		  	// Enter any new links at the parent's previous position.
+		  	link.enter().insert("svg:path", "g")
+		      .attr("class", "link")
+		      .attr("d", function(d) {
+		        var o = {x: source.x0, y: source.y0};
+		        return treechart.fn.diagonal({source: o, target: o});
+		      })
+		    .transition()
+		      .duration(treechart.prop.duration)
+		      .attr("d", treechart.fn.diagonal);
+		  
+		  	// Transition links to their new position.
+		  	link.transition()
+		      .duration(treechart.prop.duration)
+		      .attr("d", treechart.fn.diagonal);
+		  
+		  	// Transition exiting nodes to the parent's new position.
+		  	link.exit().transition()
+		      .duration(treechart.prop.duration)
+		      .attr("d", function(d) {
+		        var o = {x: source.x, y: source.y};
+		        return treechart.fn.diagonal({source: o, target: o});
+		      })
+		      .remove();
+		  
+		  	// Stash the old positions for transition.
+		  	nodes.forEach(function(d) {
+		    	d.x0 = d.x;
+		    	d.y0 = d.y;
+		  	});		
+    
+    	}
+    	
+    	//create nested parent child data structure similar to flare.json for d3 tree chart from salesforce  api result
+		chartapp.treechart.traverse = function(objname, allobj, treedata){
+			var index = 0;
+			for(var prop in allobj){
+				var obj;
+				if(typeof allobj[prop] == "object"){
+					if(index > 20) {
+						//break at level 20 depth to avoid browser hanging problem
+						return;
+					}
+					obj = {name:prop, children:[]};
+					treedata.children.push(obj)
+					chartapp.treechart.traverse(prop, allobj[prop], treedata.children[index]);	
+					
+				}else{
+					obj = {name:prop+" - "+allobj[prop], children:[]};
+					treedata.children.push(obj);	
+				}
+				index++;
+			}
+		}
+    
+    	treechart.fn.nodecolor = function(d) {
+  			return d._children ? "white" : d.children ? "orange" : "white";
+		}
+	
+		treechart.fn.nodeclick = function(d) {
+		  if (d.children) {
+		    d._children = d.children;
+		    d.children = null;
+		  } else {
+		    d.children = d._children;
+		    d._children = null;
+		  }
+		  chartapp.treechart.update(d);
+		}
+	
+		$(function() {
+			$("#navcontainerid a ").on( "click", function(event) {
+				//console.log("target id = "+this.id);
+				$('#navcontainerid a').removeClass('active');
+				if (!$(this).hasClass('active')) {
+    				$(this).addClass('active');
+  				}
+				chartapp.evthandler(this.id);
+			});
+			
+			//create new instance of forcetk which our rest api client to access salesforce reports and any other custom objects        	
+	        chartapp.client = new forcetk.Client();
+	        //assign our current session id
+	    	chartapp.client.setSessionToken('{!$Api.Session_ID}');
+	    	//small recommended fix to connection error
+	    	chartapp.client.proxyUrl = null;
+			chartapp.client.instanceUrl = '';
+			
+			//make a callout to our report services url and handle the response when its ready using callback method
+	        chartapp.util.getReports();
+		});
+	</script>
+</apex:page>

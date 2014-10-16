@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <types>
+        <members>df2014</members>
+        <name>ApexPage</name>
+    </types>
+    <types>
+        <members>Dreamforce20114</members>
+        <name>CustomApplication</name>
+    </types>
+    <types>
+        <members>Dreamforce14</members>
+        <name>CustomTab</name>
+    </types>
+    <types>
+        <members>dreamforce2014</members>
+        <members>dreamforce2014/Dreamforce2014</members>
+        <name>Report</name>
+    </types>
+    <types>
+        <members>MobileSample_Resources_jQueryMobile</members>
+        <members>bootstrap32</members>
+        <members>d3charts</members>
+        <members>d3js</members>
+        <name>StaticResource</name>
+    </types>
+    <version>31.0</version>
+</Package>
