@@ -9,7 +9,9 @@ This repo contain source code for Dreamforce 2014 Talk â€œIntroduction to D3.jsâ
 <li>5.	Analytics API Tree Chart </li>
 <li>6.	Conversion Analysis</li>
 
+<br/>
 Please find the link below for unmanaged package to install in your salesforce.com org
+<br/>
 https://login.salesforce.com/packaging/installPackage.apexp?p0=04tU0000000ILHz
 
 <h4>Slide deck</h4>
