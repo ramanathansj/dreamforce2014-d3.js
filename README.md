@@ -26,7 +26,7 @@ You need appropriate data for line/bar chart, there is same data in this repo it
 <h4>Design Notes</h4>
 
 <ul>
-<li>One page load we execute a soql query to get report id of "Dreamforce2014" report using Forcetk Client Library</li>
+<li>On page load we execute a soql query to get report id of "Dreamforce2014" report using Forcetk Client Library</li>
 <li>Call the reporting api to get Dreamforce2014 report metadata and data on callback success from previous step </li>
 <li>We process and store this data in google charts datatable which is another library for charting but I'm using it as client side storage which reporesents a matrix like data structure with apis to slice/dice the data. Since there is good client storage solution available at this point I have to stick with this, I looked at indexDb I feel its lot of code to do simple things. </li>
 <li>Twitter Bootstrap is used for designing layouts, etc </li>
